@@ -1,0 +1,2 @@
+superfluous-file-pattern debian/build/obj/ca-certificates.crt [debian/copyright:*]
+superfluous-file-pattern debian/build/obj/mozilla/\*.crt [debian/copyright:*]

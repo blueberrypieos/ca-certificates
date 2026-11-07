@@ -1,25 +1,38 @@
 #!/usr/bin/make -f
-# Sample debian/rules that uses debhelper.
-# GNU copyright 1997 to 1999 by Joey Hess.
+# SPDX-License-Identifier: BSD-2-Clause
+# Copyright (c) 2026 The Blueberry Pie OS Authors
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+include /usr/share/pietoolchain/rules.mk
 
-%:
-	dh $@
+CERTS := /usr/share/ca-certificates
 
-execute_before_dh_clean:
-	debconf-updatepo
+all: $(OBJ)/.built
 
-execute_before_dh_install:
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/ca-certificates
-	# udeb handling
-	install -d -m 0755 "$(CURDIR)/debian/ca-certificates-udeb/etc/ssl/certs"
-	(cd mozilla; \
-	 $(MAKE) install CERTSDIR="$(CURDIR)/debian/ca-certificates-udeb/etc/ssl/certs")
-	openssl rehash -v "$(CURDIR)/debian/ca-certificates-udeb/etc/ssl/certs"
+$(OBJ)/.built: $(SRCROOT)/mozilla/certdata.txt $(SRCROOT)/mozilla/blacklist.txt $(SRCROOT)/mozilla/certdata2pem.py debian/rules
+	@python3 -I -c 'import cryptography' 2>/dev/null || \
+		{ echo "ca-certificates: certdata2pem.py needs python3-cryptography on the build host" >&2; exit 1; }
+	rm -rf $(OBJ)
+	mkdir -p $(OBJ)/mozilla
+	cp $(SRCROOT)/mozilla/certdata.txt $(SRCROOT)/mozilla/blacklist.txt $(OBJ)/mozilla/
+	cd $(OBJ)/mozilla && python3 -I -W ignore::DeprecationWarning \
+		$(SRCROOT)/mozilla/certdata2pem.py > ../certdata2pem.log
+	rm $(OBJ)/mozilla/certdata.txt $(OBJ)/mozilla/blacklist.txt
+	@sed -n 's/^\(Trusted but expired\|UNTRUSTED\|Found duplicate\)/ca-certificates: warning: &/p' \
+		$(OBJ)/certdata2pem.log
+	cd $(OBJ)/mozilla && printf '%s\n' *.crt | LC_ALL=C sort | \
+		while IFS= read -r f; do cat "$$f"; done > ../ca-certificates.crt
+	touch $@
 
-override_dh_installdebconf:
-	find $(CURDIR)/debian/ca-certificates/usr/share/ca-certificates -type f -name '*.crt' -printf '%P\n' | \
-	 LC_ALL=C sort | sed -e '$$! s/$$/, /' | tr -d '\n' > debian/config.initial_certs
-	dh_installdebconf -n -DINITIAL_CERTS=@debian/config.initial_certs
+check: $(OBJ)/.built
+	python3 -I $(SRCROOT)/debian/check.py $(SRCROOT)/mozilla/certdata.txt $(SRCROOT)/mozilla/blacklist.txt \
+		$(OBJ)/ca-certificates.crt $(OBJ)/mozilla
+
+install: all check
+	rm -rf $(ROOT)$(CERTS)
+	install -d $(ROOT)$(CERTS)/mozilla $(ROOT)/etc/ssl/certs
+	install -m 644 $(OBJ)/mozilla/*.crt $(ROOT)$(CERTS)/mozilla/
+	install -m 644 $(OBJ)/ca-certificates.crt $(ROOT)$(CERTS)/
+	ln -sfn $(CERTS)/ca-certificates.crt $(ROOT)/etc/ssl/certs/ca-certificates.crt
+	ln -sfn /etc/ssl/certs/ca-certificates.crt $(ROOT)/etc/ssl/cert.pem
+
+.PHONY: all check install

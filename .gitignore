@@ -11,3 +11,4 @@ debian/ca-certificates-udeb.substvars
 debian/config.initial_certs
 debian/files
 mozilla/*.crt
+debian/build/
