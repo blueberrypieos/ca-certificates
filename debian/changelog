@@ -1,3 +1,9 @@
+ca-certificates (20260816+nmu1+ds1-2) blueberry-pie-os; urgency=medium
+
+  * Build-Depend on pietoolchain-host and pietoolchain-sdk.
+
+ -- Maxwell <maxwell@blueberrypieos.com>  Sun, 15 Nov 2026 14:12:24 +0000
+
 ca-certificates (20260816+nmu1+ds1-1) blueberry-pie-os; urgency=medium
 
   * ca-certificates 20260816+nmu1

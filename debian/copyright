@@ -9,10 +9,6 @@ Files-Included:
  mozilla/certdata.txt
  mozilla/certdata2pem.py
 
-Files: mozilla/certdata.txt
-Copyright: Mozilla Contributors
-License: MPL-2.0
-
 Files: mozilla/blacklist.txt
  mozilla/certdata2pem.py
 Copyright: 2003 Fumitoshi UKAI <ukai@debian.or.jp>
@@ -27,6 +23,7 @@ License: BSD-2-Clause
 
 Files: debian/build/obj/ca-certificates.crt
  debian/build/obj/mozilla/*.crt
+ mozilla/certdata.txt
 Copyright: Mozilla Contributors
 License: MPL-2.0
 
